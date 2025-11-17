@@ -6,6 +6,8 @@ import { getData } from "./server/api";
 import type { Record, Status } from "./types";
 import SearchBar from "./components/UI/searchBar";
 import DropDown from "./components/UI/dropDown";
+import DateRangeFilter from "./components/UI/dateRangeFilter";
+import { parseRecordDate } from "./utils/dateUtils";
 
 const StatusOptions = [
   { label: "All", value: "ALL" },
@@ -20,6 +22,8 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   useEffect(() => {
     getData()
@@ -37,12 +41,33 @@ export default function App() {
   }, []);
 
   const filteredData = useMemo(() => {
-    if (!search&&status==="ALL") return data;
-    const query = search.toLowerCase();
-    return data.filter((record) =>
-      (record.about.name.toLowerCase().includes(query)) && (record.about.status === status)
-    );
-  }, [data, search]);
+    return data.filter((record) => {
+      // Search filter
+      const matchesSearch =
+        !search ||
+        record.about.name.toLowerCase().includes(search.toLowerCase());
+
+      // Status filter
+      const matchesStatus = status === "ALL" || record.about.status === status;
+
+      // Date range filter
+      let matchesDateRange = true;
+      if (startDate && endDate) {
+        const recordDate = parseRecordDate(record.details.date);
+        matchesDateRange = recordDate >= startDate && recordDate <= endDate;
+      }
+
+      return matchesSearch && matchesStatus && matchesDateRange;
+    });
+  }, [data, search, status, startDate, endDate]);
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatus("ALL");
+    setStartDate(null);
+    setEndDate(null);
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -81,12 +106,33 @@ export default function App() {
             onChange={setSearch}
             setPage={setPage}
           />
-          <DropDown
-            options={StatusOptions}
-            onChange={(value) => setStatus(value as Status)}
-            value={status}
-            setPage={setPage}
-          />
+          <div className="flex items-center gap-2">
+            {(startDate || endDate || search || status !== "ALL") && (<div className="">
+              <p
+                className="text-sm text-blue-500 cursor-pointer"
+                onClick={() => {
+                  clearFilters();
+                }}
+              >
+                Clear All Filters
+              </p>
+            </div>)}
+            <DropDown
+              options={StatusOptions}
+              onChange={(value) => setStatus(value as Status)}
+              value={status}
+              setPage={setPage}
+            />
+            <DateRangeFilter
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
+              setPage={setPage}
+            />
+          </div>
         </div>
       </div>
     </div>
