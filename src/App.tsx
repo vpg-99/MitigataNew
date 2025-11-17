@@ -3,13 +3,22 @@ import { useState, useEffect, useMemo } from "react";
 import StatCard from "./components/StatCard";
 import { FiUsers, FiUserCheck, FiUserMinus, FiUserX } from "react-icons/fi";
 import { getData } from "./server/api";
-import type { Record } from "./types";
+import type { Record, Status } from "./types";
 import SearchBar from "./components/UI/searchBar";
+import DropDown from "./components/UI/dropDown";
+
+const StatusOptions = [
+  { label: "All", value: "ALL" },
+  { label: "Active", value: "ACTIVE" },
+  { label: "Inactive", value: "INACTIVE" },
+  { label: "Blocked", value: "BLOCKED" },
+];
 
 export default function App() {
   const [data, setData] = useState<Record[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("ALL");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -28,10 +37,10 @@ export default function App() {
   }, []);
 
   const filteredData = useMemo(() => {
-    if (!search) return data;
+    if (!search&&status==="ALL") return data;
     const query = search.toLowerCase();
     return data.filter((record) =>
-      record.about.name.toLowerCase().includes(query)
+      (record.about.name.toLowerCase().includes(query)) && (record.about.status === status)
     );
   }, [data, search]);
 
@@ -66,7 +75,19 @@ export default function App() {
             icon={<FiUserX size={24} />}
           />
         </div>
-        <SearchBar placeholder="Search by name" onChange={setSearch} setPage={setPage} />
+        <div className="flex justify-between items-center mb-6 gap-4">
+          <SearchBar
+            placeholder="Search by name"
+            onChange={setSearch}
+            setPage={setPage}
+          />
+          <DropDown
+            options={StatusOptions}
+            onChange={(value) => setStatus(value as Status)}
+            value={status}
+            setPage={setPage}
+          />
+        </div>
       </div>
     </div>
   );
