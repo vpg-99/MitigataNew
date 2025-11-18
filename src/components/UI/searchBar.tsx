@@ -3,12 +3,14 @@ import { FiSearch } from "react-icons/fi";
 
 interface SearchBarProps {
   placeholder?: string;
+  value: string;
   onChange: (value: string) => void;
   setPage?: (page: number) => void;
 }
 
 export default function SearchBar({
   placeholder = "Search",
+  value,
   onChange,
   setPage,
 }: SearchBarProps) {
@@ -23,6 +25,7 @@ export default function SearchBar({
       <input
         type="text"
         placeholder={placeholder}
+        value={value}
         onChange={handleSearch}
         className="w-full pl-10 pr-4 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-gray-900 placeholder:text-gray-400"
       />

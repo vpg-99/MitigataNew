@@ -7,6 +7,8 @@ import type { Record, Status } from "./types";
 import SearchBar from "./components/UI/searchBar";
 import DropDown from "./components/UI/dropDown";
 import DateRangeFilter from "./components/UI/dateRangeFilter";
+import TableHeader from "./components/TableHeader";
+import TableRow from "./components/TableRow";
 import { parseRecordDate } from "./utils/dateUtils";
 
 const StatusOptions = [
@@ -24,6 +26,8 @@ export default function App() {
   const [page, setPage] = useState(1);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     getData()
@@ -40,9 +44,8 @@ export default function App() {
       });
   }, []);
 
-  const filteredData = useMemo(() => {
-    return data.filter((record) => {
-      // Search filter
+  const filteredAndSortedData = useMemo(() => {
+    const filtered = data.filter((record) => {
       const matchesSearch =
         !search ||
         record.about.name.toLowerCase().includes(search.toLowerCase());
@@ -59,7 +62,44 @@ export default function App() {
 
       return matchesSearch && matchesStatus && matchesDateRange;
     });
-  }, [data, search, status, startDate, endDate]);
+
+    // Then, sort the filtered data
+    if (!sortColumn) return filtered;
+
+    return [...filtered].sort((a, b) => {
+      let aValue: string | Date;
+      let bValue: string | Date;
+
+      switch (sortColumn) {
+        case "name":
+          aValue = a.about.name;
+          bValue = b.about.name;
+          break;
+        case "email":
+          aValue = a.about.email;
+          bValue = b.about.email;
+          break;
+        case "date":
+          aValue = parseRecordDate(a.details.date);
+          bValue = parseRecordDate(b.details.date);
+          break;
+        case "invitedBy":
+          aValue = a.details.invitedBy;
+          bValue = b.details.invitedBy;
+          break;
+        case "status":
+          aValue = a.about.status;
+          bValue = b.about.status;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [data, search, status, startDate, endDate, sortColumn, sortDirection]);
 
   const clearFilters = () => {
     setSearch("");
@@ -67,6 +107,52 @@ export default function App() {
     setStartDate(null);
     setEndDate(null);
     setPage(1);
+  };
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  };
+
+  const handleBlock = (id: string) => {
+    // Update the user's status to BLOCKED
+    const user = data.find((record) => record.id === id);
+    if (!user) return;
+    setData((prevData) =>
+      prevData.map((record) =>
+        record.id === id
+          ? { ...record, about: { ...record.about, status: "BLOCKED" } }
+          : record
+      )
+    );
+  };
+
+  const handleActivate = (id: string) => {
+    // Update the user's status to ACTIVE
+    setData((prevData) =>
+      prevData.map((record) =>
+        record.id === id
+          ? { ...record, about: { ...record.about, status: "ACTIVE" } }
+          : record
+      )
+    );
+  };
+
+  const handleInactive = (id: string) => {
+    // Update the user's status to inactive
+    const user = data.find((record) => record.id === id);
+    if (!user) return;
+    setData((prevData) =>
+      prevData.map((record) =>
+        record.id === id
+          ? { ...record, about: { ...record.about, status: "INACTIVE" } }
+          : record
+      )
+    );
   };
 
   return (
@@ -103,20 +189,23 @@ export default function App() {
         <div className="flex justify-between items-center mb-6 gap-4">
           <SearchBar
             placeholder="Search by name"
+            value={search}
             onChange={setSearch}
             setPage={setPage}
           />
           <div className="flex items-center gap-2">
-            {(startDate || endDate || search || status !== "ALL") && (<div className="">
-              <p
-                className="text-sm text-blue-500 cursor-pointer"
-                onClick={() => {
-                  clearFilters();
-                }}
-              >
-                Clear All Filters
-              </p>
-            </div>)}
+            {(startDate || endDate || search || status !== "ALL") && (
+              <div className="">
+                <p
+                  className="text-sm text-blue-500 cursor-pointer"
+                  onClick={() => {
+                    clearFilters();
+                  }}
+                >
+                  Clear All Filters
+                </p>
+              </div>
+            )}
             <DropDown
               options={StatusOptions}
               onChange={(value) => setStatus(value as Status)}
@@ -133,6 +222,34 @@ export default function App() {
               setPage={setPage}
             />
           </div>
+        </div>
+
+        {/* Table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <TableHeader
+            onSort={handleSort}
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+          />
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Loading...</div>
+          ) : filteredAndSortedData.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              No records found
+            </div>
+          ) : (
+            <div>
+              {filteredAndSortedData.map((record) => (
+                <TableRow
+                  key={record.id}
+                  record={record}
+                  onBlock={handleBlock}
+                  onActivate={handleActivate}
+                  onInactive={handleInactive}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
