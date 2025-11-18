@@ -1,4 +1,3 @@
-import React from "react";
 import {
   FaAngleLeft,
   FaAngleRight,
@@ -43,9 +42,15 @@ export default function pagination({
         {!isFirstPage ? <FaAngleLeft size={16} /> : null}
       </button>
       <span className="text-gray-700 text-sm">Page</span>
-      <select className="w-10 text-center bg-white border border-gray-300 rounded-md text-sm" value={currentPage} onChange={(e)=>goToPage(Number(e.target.value))}>
-        {Array.from({length: totalPages}, (_, index)=>(
-          <option key={index} value={index+1}>{index+1}</option>
+      <select
+        className="w-10 text-center bg-white border border-gray-300 rounded-md text-sm"
+        value={currentPage}
+        onChange={(e) => goToPage(Number(e.target.value))}
+      >
+        {Array.from({ length: totalPages }, (_, index) => (
+          <option key={index} value={index + 1}>
+            {index + 1}
+          </option>
         ))}
       </select>
       <span className="text-gray-700 text-sm">of {totalPages}</span>

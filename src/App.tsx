@@ -29,13 +29,14 @@ export default function App() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [sortColumn, setSortColumn] = useState<string | null>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+
   const [visibleRows, setVisibleRows] = useState(5);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const scrollContainerRef = useRef(null);
   const sentinelRef = useRef(null);
   const incrementSize = 5;
+  const itemsPerPage = 10;
 
   useEffect(() => {
     getData()
