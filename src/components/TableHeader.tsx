@@ -36,7 +36,7 @@ export default function TableHeader({
   };
 
   return (
-    <div className="bg-gray-50 border-b border-gray-200">
+    <div className=" border-gray-200 sticky py-3">
       <div className="grid grid-cols-[1fr_1.2fr_1fr_1fr_1fr_1fr] gap-4 px-6 py-3">
         {sortableColumns.map((column) => (
           <div

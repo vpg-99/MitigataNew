@@ -1,4 +1,3 @@
-// Barrel export for Table components
 export { default as Td } from "./Td";
 export { default as Tr } from "./Tr";
 export { default as StatusBadge } from "./StatusBadge";

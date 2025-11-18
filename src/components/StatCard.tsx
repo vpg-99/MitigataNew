@@ -16,8 +16,6 @@ export default function StatCard({
   icon,
   iconBgColor = "bg-green-100",
   iconColor = "text-green-700",
-  bgColor,
-  textColor,
 }: StatCardProps) {
   return (
     <div className="bg-white rounded-lg shadow-sm p-6 flex items-start gap-4">

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { DateRangePicker, RangeKeyDict } from "react-date-range";
+import { DateRangePicker, type RangeKeyDict } from "react-date-range";
 import { FiCalendar, FiX } from "react-icons/fi";
 import { format } from "date-fns";
 import "react-date-range/dist/styles.css";

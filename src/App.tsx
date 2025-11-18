@@ -1,5 +1,5 @@
 // import { useState } from 'react'
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import StatCard from "./components/StatCard";
 import { FiUsers, FiUserCheck, FiUserMinus, FiUserX } from "react-icons/fi";
 import { getData } from "./server/api";
@@ -30,6 +30,12 @@ export default function App() {
   const [sortColumn, setSortColumn] = useState<string | null>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [visibleRows, setVisibleRows] = useState(5);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const scrollContainerRef = useRef(null);
+  const sentinelRef = useRef(null);
+  const incrementSize = 5;
 
   useEffect(() => {
     getData()
@@ -105,16 +111,18 @@ export default function App() {
 
   useEffect(() => {
     setPage(1);
+    setVisibleRows(5); // Reset to show 5 rows when filters change
   }, [search, status, startDate, endDate, itemsPerPage]);
 
   const paginatedData = useMemo(() => {
     const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    const endIndex = startIndex + visibleRows; // Use visibleRows instead of itemsPerPage
     return filteredAndSortedData.slice(startIndex, endIndex);
-  }, [filteredAndSortedData, page, itemsPerPage]);
+  }, [filteredAndSortedData, page, itemsPerPage, visibleRows]);
 
-  const handlePageChange = (page: number) => {
-    setPage(page);
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    setVisibleRows(5); // Reset to 5 rows when manually changing pages
   };
 
   const clearFilters = () => {
@@ -123,6 +131,7 @@ export default function App() {
     setStartDate(null);
     setEndDate(null);
     setPage(1);
+    setVisibleRows(5); // Reset to show 5 rows
   };
 
   const handleSort = (column: string) => {
@@ -132,6 +141,7 @@ export default function App() {
       setSortColumn(column);
       setSortDirection("asc");
       setPage(1);
+      setVisibleRows(5); // Reset to show 5 rows
     }
   };
 
@@ -171,6 +181,47 @@ export default function App() {
       )
     );
   };
+
+  const loadMoreRows = () => {
+    // Prevent multiple simultaneous loads
+    if (isLoadingMore) return;
+
+    setIsLoadingMore(true);
+
+    const currentPageStart = (page - 1) * itemsPerPage;
+    const currentPageData = filteredAndSortedData.slice(
+      currentPageStart,
+      currentPageStart + itemsPerPage
+    );
+    const maxRowsInCurrentPage = currentPageData.length;
+
+    // Only load more if there are more rows to show in current page
+    if (visibleRows < maxRowsInCurrentPage) {
+      setVisibleRows((prev) =>
+        Math.min(prev + incrementSize, maxRowsInCurrentPage)
+      );
+    }
+    setTimeout(() => setIsLoadingMore(false), 300);
+  };
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoadingMore) {
+          loadMoreRows();
+        }
+      },
+      {
+        root: scrollContainerRef.current,
+        threshold: 1.0,
+      }
+    );
+
+    if (sentinelRef.current) {
+      observer.observe(sentinelRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [visibleRows, page, filteredAndSortedData, isLoadingMore]);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -254,7 +305,7 @@ export default function App() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-sm overflow-hidden">
           <TableHeader
             onSort={handleSort}
             sortColumn={sortColumn}
@@ -267,22 +318,42 @@ export default function App() {
               No records found
             </div>
           ) : (
-            <div>
-              {paginatedData.map((record) => (
-                <TableRow
-                  key={record.id}
-                  record={record}
-                  onBlock={handleBlock}
-                  onActivate={handleActivate}
-                  onInactive={handleInactive}
-                />
-              ))}
+            <div
+              className="overflow-y-auto"
+              style={{ maxHeight: "400px" }}
+              ref={scrollContainerRef}
+            >
+              <div>
+                {paginatedData.map((record) => (
+                  <TableRow
+                    key={record.id}
+                    record={record}
+                    onBlock={handleBlock}
+                    onActivate={handleActivate}
+                    onInactive={handleInactive}
+                  />
+                ))}
+
+                {(() => {
+                  const currentPageStart = (page - 1) * itemsPerPage;
+                  const currentPageData = filteredAndSortedData.slice(
+                    currentPageStart,
+                    currentPageStart + itemsPerPage
+                  );
+                  const hasMoreRows = visibleRows < currentPageData.length;
+
+                  return hasMoreRows ? (
+                    <div ref={sentinelRef} className="h-1" />
+                  ) : null;
+                })()}
+              </div>
             </div>
           )}
         </div>
+        {/* Pagination */}
         <Pagination
           currentPage={page}
-          totalItems={filteredAndSortedData.length} // Use filtered count, not total
+          totalItems={filteredAndSortedData.length}
           itemsPerPage={itemsPerPage}
           onPageChange={handlePageChange}
         />

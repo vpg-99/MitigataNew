@@ -18,7 +18,7 @@ export default function TableRow({
   onInactive,
 }: TableRowProps) {
   return (
-    <Tr>
+    <Tr className="hover:bg-gray-50 py-5">
       <Td className="font-medium text-gray-900">{record.about.name}</Td>
       <Td>{record.about.email}</Td>
       <Td>{record.details.date}</Td>
