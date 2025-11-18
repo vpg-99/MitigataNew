@@ -10,6 +10,7 @@ import DateRangeFilter from "./components/UI/dateRangeFilter";
 import TableHeader from "./components/TableHeader";
 import TableRow from "./components/TableRow";
 import { parseRecordDate } from "./utils/dateUtils";
+import Pagination from "./components/UI/pagination";
 
 const StatusOptions = [
   { label: "All", value: "ALL" },
@@ -28,6 +29,7 @@ export default function App() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [sortColumn, setSortColumn] = useState<string | null>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     getData()
@@ -101,6 +103,20 @@ export default function App() {
     });
   }, [data, search, status, startDate, endDate, sortColumn, sortDirection]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, startDate, endDate, itemsPerPage]);
+
+  const paginatedData = useMemo(() => {
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredAndSortedData.slice(startIndex, endIndex);
+  }, [filteredAndSortedData, page, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setPage(page);
+  };
+
   const clearFilters = () => {
     setSearch("");
     setStatus("ALL");
@@ -115,6 +131,7 @@ export default function App() {
     } else {
       setSortColumn(column);
       setSortDirection("asc");
+      setPage(1);
     }
   };
 
@@ -239,7 +256,7 @@ export default function App() {
             </div>
           ) : (
             <div>
-              {filteredAndSortedData.map((record) => (
+              {paginatedData.map((record) => (
                 <TableRow
                   key={record.id}
                   record={record}
@@ -251,6 +268,12 @@ export default function App() {
             </div>
           )}
         </div>
+        <Pagination
+          currentPage={page}
+          totalItems={filteredAndSortedData.length} // Use filtered count, not total
+          itemsPerPage={itemsPerPage}
+          onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );

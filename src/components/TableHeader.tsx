@@ -27,7 +27,6 @@ export default function TableHeader({
         <FiChevronDown className="inline ml-1" size={16} />
       );
     }
-    // Show both arrows when not sorted
     return (
       <span className="inline-flex flex-col ml-1 opacity-40">
         <FiChevronUp size={12} style={{ marginBottom: -4 }} />
